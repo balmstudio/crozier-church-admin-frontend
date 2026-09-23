@@ -8,6 +8,7 @@ export interface IconProps {
 
 export const CROZIERICONS = {
   Dashboard: "Dashboard",
+  AppGrid: "AppGrid",
   AdminUsers: "AdminUsers",
   Settings: "Settings",
   Logout: "Logout",

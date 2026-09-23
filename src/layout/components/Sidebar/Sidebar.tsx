@@ -17,7 +17,7 @@ const Sidebar = ({
   return (
     <aside
       className={`sticky top-0 flex h-dvh w-65.5 min-w-65.5
-        flex-col overflow-y-auto bg-crozier-surface-primary px-4 pt-4 pb-[35px] text-crozier-text-body-light
+        flex-col overflow-y-auto bg-crozier-surface-primary px-4 pt-4 pb-8.75 text-crozier-text-body-light
         max-[760px]:w-[min(262px,88vw)] max-[760px]:min-w-[min(262px,88vw)] ${className}`}
       aria-label="Primary navigation"
     >
@@ -31,13 +31,13 @@ const Sidebar = ({
         ) : (
           <span
             className="grid size-8 shrink-0 place-items-center rounded-full
-              bg-crozier-surface-primary text-[10px] font-bold text-neutral-white"
+              bg-crozier-surface-primary text-[10px] font-semibold text-crozier-text-heading"
             aria-hidden="true"
           >
             {getInitials(brand.name)}
           </span>
         )}
-        <span className="text-[17px] font-bold tracking-[-0.01em]">{brand.name}</span>
+        <span className="text-base text-crozier-text-heading font-semibold tracking-[-0.01em]">{brand.name}</span>
       </div>
 
       <nav className="mt-7.5 flex flex-col gap-5">
@@ -50,10 +50,9 @@ const Sidebar = ({
               isActive,
             }) => `group flex min-h-11 items-center gap-2.5 rounded-[9px] px-2.5
               text-[15px] font-medium no-underline transition-colors
-              ${
-                isActive
-                  ? "bg-crozier-surface-primary-shade text-crozier-icon-primary [--navigation-icon-accent:var(--crozier-icon-accent)]"
-                  : "text-crozier-icon-disabled-dark [--navigation-icon-accent:currentColor] hover:bg-crozier-surface-disabled-lighter hover:text-crozier-icon-primary"
+              ${isActive
+                ? "bg-crozier-surface-primary-shade text-crozier-icon-primary [--navigation-icon-accent:var(--crozier-icon-accent)]"
+                : "text-crozier-icon-disabled-dark [--navigation-icon-accent:currentColor] hover:bg-crozier-surface-disabled-lighter hover:text-crozier-icon-primary"
               }`}
           >
             <span className="grid size-5 shrink-0 place-items-center">

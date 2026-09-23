@@ -1,4 +1,5 @@
 import DashboardIcon from "./svg/DashboardIcon";
+import AppGridIcon from "./svg/AppGridIcon";
 import AdminUsersIcon from "./svg/AdminUsersIcon";
 import LogoutIcon from "./svg/LogoutIcon";
 import SettingsIcon from "./svg/SettingsIcon";
@@ -13,6 +14,7 @@ interface AppIconProps extends IconProps {
 
 const icons = {
   [CROZIERICONS.Dashboard]: DashboardIcon,
+  [CROZIERICONS.AppGrid]: AppGridIcon,
   [CROZIERICONS.AdminUsers]: AdminUsersIcon,
   [CROZIERICONS.Settings]: SettingsIcon,
   [CROZIERICONS.Logout]: LogoutIcon,
