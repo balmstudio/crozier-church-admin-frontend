@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { getProfile } from "../api/profile.service";
-import { profileKeys } from "./profileKeys";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
-export const useProfile = () =>
-  useQuery({
-    queryKey: profileKeys.detail(),
-    queryFn: getProfile,
-  });
+export const useProfile = () => {
+  const query = useCurrentUser();
+
+  return {
+    ...query,
+    data: query.data?.data.user,
+  };
+};
