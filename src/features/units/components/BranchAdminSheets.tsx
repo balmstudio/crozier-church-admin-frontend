@@ -6,6 +6,13 @@ import ConfirmationSideSheet from "@/components/common/ConfirmationSideSheet";
 import { Button } from "@/components/ui/button";
 import { CROZIERICONS, Icon } from "@/components/icons";
 import { getInitials } from "@/utils/getInitials";
+import { getErrorMessage } from "@/helpers/getErrorMessage";
+import { useBranchByIdUnits } from "@/features/branches/hooks/useBranchByIdUnits.hook";
+import { useEditBranchByIdWorker } from "@/features/branches/hooks/useEditBranchByIdWorker.hook";
+import type {
+  BranchByIdWorker,
+  EditBranchByIdWorkerRole,
+} from "@/features/branches/types/branch.types";
 
 export interface BranchAdminRecord {
   id: number;
@@ -19,6 +26,168 @@ export interface BranchAdminRecord {
 }
 
 export type BranchAdminAction = "view" | "edit" | "deactivate" | "delete" | null;
+
+export const BranchWorkerDetailsSheet = ({
+  worker,
+  onOpenChange,
+}: {
+  worker: BranchByIdWorker | null;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const workerProfile = worker?.workerProfile?.[0];
+  const name = worker ? `${worker.firstName} ${worker.lastName}` : "";
+
+  return (
+    <SideSheet
+      title="Admin details"
+      open={Boolean(worker)}
+      onOpenChange={onOpenChange}
+    >
+      {worker && (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="space-y-7 px-7 py-4">
+            <div className="flex items-center gap-3">
+              {worker.profileImage ? (
+                <img src={worker.profileImage} alt="" className="size-12 rounded-full object-cover" />
+              ) : (
+                <span className="grid size-12 place-items-center rounded-full bg-crozier-surface-primary-tint text-2xl text-crozier-text-heading">
+                  {getInitials(name)}
+                </span>
+              )}
+              <span className="min-w-0">
+                <strong className="block text-base font-normal leading-5 text-crozier-text-body">{name}</strong>
+                <span className="block truncate text-sm text-crozier-text-placeholder">{worker.email}</span>
+              </span>
+            </div>
+            <div className="space-y-3">
+              <SectionTitle>Access details</SectionTitle>
+              <DetailField
+                label="Role"
+                value={workerProfile?.isSuperAdmin ? "Branch super admin" : (workerProfile?.role ?? "Nil")}
+              />
+              <DetailField label="Unit" value={workerProfile?.unit?.name ?? "Nil"} />
+              <DetailField label="Account status" value={workerProfile?.status ?? "Nil"} />
+            </div>
+          </div>
+          <div className="mt-auto border-t border-crozier-border-primary px-7 py-4">
+            <Button variant="outline" className="h-9 rounded-lg border-crozier-text-accent px-5 text-crozier-text-action" onClick={() => onOpenChange(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+    </SideSheet>
+  );
+};
+
+export const EditBranchWorkerSheet = ({
+  worker,
+  branchId,
+  onOpenChange,
+}: {
+  worker: BranchByIdWorker | null;
+  branchId: string | undefined;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const workerProfile = worker?.workerProfile?.[0];
+  const currentUnit = workerProfile?.unit;
+  const name = worker ? `${worker.firstName} ${worker.lastName}` : "";
+  const [role, setRole] = useState<EditBranchByIdWorkerRole>(workerProfile?.role ?? "Worker");
+  const [unitId, setUnitId] = useState(workerProfile?.unitId ?? "");
+  const [errorMessage, setErrorMessage] = useState("");
+  const unitsQuery = useBranchByIdUnits(
+    branchId,
+    { pageNumber: 1, limit: 100 },
+    Boolean(worker),
+  );
+  const editWorker = useEditBranchByIdWorker(branchId);
+  const units = unitsQuery.data?.data.docs ?? [];
+  const currentUnitIsMissing = Boolean(
+    currentUnit && !units.some((unit) => unit.id === currentUnit.id),
+  );
+
+  return (
+    <SideFormSheet
+      title="Edit admin details"
+      submitLabel="Save"
+      open={Boolean(worker)}
+      onOpenChange={onOpenChange}
+      isSubmitting={editWorker.isPending}
+      onSubmit={async (event) => {
+        event.preventDefault();
+        setErrorMessage("");
+
+        if (!workerProfile?.id) {
+          setErrorMessage("This worker does not have an editable worker profile.");
+          return;
+        }
+
+        try {
+          await editWorker.mutateAsync({
+            workerId: workerProfile.id,
+            payload: { role, unitId },
+          });
+          onOpenChange(false);
+        } catch (error) {
+          setErrorMessage(getErrorMessage(error, "Unable to update worker details."));
+        }
+      }}
+    >
+      {worker && (
+        <div className="space-y-7">
+          <div className="flex items-center gap-3">
+            {worker.profileImage ? (
+              <img src={worker.profileImage} alt="" className="size-12 rounded-full object-cover" />
+            ) : (
+              <span className="grid size-12 place-items-center rounded-full bg-crozier-surface-primary-tint text-2xl text-crozier-text-heading">
+                {getInitials(name)}
+              </span>
+            )}
+            <span className="min-w-0">
+              <strong className="block text-base font-normal leading-5 text-crozier-text-body">{name}</strong>
+              <span className="block truncate text-sm text-crozier-text-placeholder">{worker.email}</span>
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <SectionTitle>Access details</SectionTitle>
+            <SelectField
+              id="edit-worker-role"
+              label="Role"
+              value={role}
+              onChange={(value) => setRole(value as EditBranchByIdWorkerRole)}
+            >
+              <option value="Worker">Worker</option>
+              <option value="Admin">Admin</option>
+              <option value="Member">Member</option>
+            </SelectField>
+            <SelectField
+              id="edit-worker-unit"
+              label="Unit"
+              value={unitId}
+              onChange={setUnitId}
+              disabled={unitsQuery.isPending}
+            >
+              <option value="">No unit</option>
+              {currentUnitIsMissing && currentUnit && (
+                <option value={currentUnit.id}>{currentUnit.name}</option>
+              )}
+              {units.map((unit) => (
+                <option key={unit.id} value={unit.id}>{unit.name}</option>
+              ))}
+            </SelectField>
+            {unitsQuery.isPending && <p className="text-xs text-crozier-text-placeholder">Loading units...</p>}
+            {unitsQuery.isError && (
+              <div className="flex items-center gap-2 text-xs text-red-600">
+                <span>{getErrorMessage(unitsQuery.error, "Unable to load units.")}</span>
+                <button type="button" className="font-medium underline" onClick={() => unitsQuery.refetch()}>Try again</button>
+              </div>
+            )}
+            {errorMessage && <p role="alert" className="text-sm text-red-600">{errorMessage}</p>}
+          </div>
+        </div>
+      )}
+    </SideFormSheet>
+  );
+};
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <div className="flex h-7 items-center gap-2 rounded-lg bg-crozier-surface-primary px-3 text-sm font-medium text-crozier-text-heading">
@@ -48,6 +217,40 @@ const DetailField = ({ label, value }: { label: string; value: string }) => (
     <p className="text-sm text-crozier-text-placeholder">{label}</p>
     <div className="flex h-10.5 items-center rounded-lg bg-crozier-surface-primary px-3 text-sm text-crozier-text-body">
       {value}
+    </div>
+  </div>
+);
+
+const SelectField = ({
+  id,
+  label,
+  value,
+  onChange,
+  disabled = false,
+  children,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) => (
+  <div className="space-y-2">
+    <label htmlFor={id} className="text-sm text-crozier-text-placeholder">
+      {label} <span className="text-crozier-text-heading">*</span>
+    </label>
+    <div className="relative">
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10.5 w-full appearance-none rounded-lg border-0 bg-crozier-surface-primary-tint px-3 pr-10 text-sm text-crozier-text-body outline-none focus:ring-1 focus:ring-crozier-text-accent disabled:cursor-wait disabled:opacity-60"
+      >
+        {children}
+      </select>
+      <ChevronDown aria-hidden="true" size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2" />
     </div>
   </div>
 );

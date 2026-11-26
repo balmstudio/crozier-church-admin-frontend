@@ -1,13 +1,13 @@
 import DashboardMetricCard from "./DashboardMetricCard";
 import PeriodFilter from "./PeriodFilter";
 import { cn } from "@/lib/utils";
-import type { DashboardMetric, DashboardPeriod } from "../types/dashboard.types";
+import type { AnalyticsFilter, DashboardMetric } from "../types/dashboard.types";
 
 interface MetricSummarySectionProps {
   title: string;
   metrics: DashboardMetric[];
-  period: DashboardPeriod;
-  onPeriodChange: (period: DashboardPeriod) => void;
+  period: AnalyticsFilter;
+  onPeriodChange: (period: AnalyticsFilter) => void;
 }
 
 const MetricSummarySection = ({

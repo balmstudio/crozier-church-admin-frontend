@@ -1,10 +1,13 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { CROZIERICONS, Icon } from "@/components/icons";
 import SideFormSheet from "@/components/common/SideFormSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { BranchContact } from "@/features/settings/types/branch.types";
+import type { BranchByIdDetails } from "@/features/branches/types/branch.types";
+import type { SettingsUpdateTenantPayload } from "@/features/settings/types/settings.types";
+import { useUpdateSettingsTenant } from "@/features/settings/hooks/useUpdateSettingsTenant";
+import { getErrorMessage } from "@/helpers/getErrorMessage";
 
 const SectionTitle = ({ children }: { children: string }) => (
   <div className="flex h-7 items-center gap-2 rounded-lg bg-crozier-surface-primary px-3 text-sm font-medium text-crozier-text-heading">
@@ -13,99 +16,99 @@ const SectionTitle = ({ children }: { children: string }) => (
   </div>
 );
 
-const EditBranchDetailsSheet = ({
-  branch,
-  onSave,
-}: {
-  branch: BranchContact;
-  onSave: (details: Pick<BranchContact, "name" | "abbreviatedName" | "logo" | "primaryColour">) => void;
-}) => {
+const EditBranchDetailsSheet = ({ branch }: { branch: BranchByIdDetails }) => {
+  const tenant = branch.TenantModel;
   const [open, setOpen] = useState(false);
-  const [logo, setLogo] = useState(branch.logo);
-  const [colour, setColour] = useState(branch.primaryColour);
-  const [marker, setMarker] = useState({ x: 56.5, y: 46 });
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [logo, setLogo] = useState(tenant.logo ?? "");
+  const [errorMessage, setErrorMessage] = useState("");
+  const updateTenant = useUpdateSettingsTenant(branch.id);
 
-  const updateLogo = (file?: File) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setLogo(String(reader.result));
-    reader.readAsDataURL(file);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setLogo(tenant.logo ?? "");
+      setErrorMessage("");
+      updateTenant.reset();
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage("");
+
+    if (logo && !logo.startsWith("https://")) {
+      setErrorMessage("Logo must be an HTTPS URL.");
+      return;
+    }
+
+    const data = new FormData(event.currentTarget);
+    const payload: SettingsUpdateTenantPayload = {
+      name: String(data.get("name") ?? "").trim(),
+      abbreviatedName: String(data.get("abbreviatedName") ?? "").trim(),
+      organizationEmail: String(data.get("organizationEmail") ?? "").trim(),
+      organizationPhoneNumber: String(data.get("organizationPhoneNumber") ?? "").trim(),
+      ...(logo ? { logo } : {}),
+    };
+
+    try {
+      await updateTenant.mutateAsync(payload);
+      setOpen(false);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "Unable to update church details."));
+    }
   };
 
   return (
     <SideFormSheet
       title="Edit church details"
-      submitLabel="Add"
-      cancelLabel="Add"
+      submitLabel="Save"
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={handleOpenChange}
+      onSubmit={handleSubmit}
+      isSubmitting={updateTenant.isPending}
       contentClassName="space-y-0"
       trigger={
         <Button variant="outline" className="h-8.5 rounded-[10px] border-crozier-text-accent px-5 text-sm text-crozier-text-action">
           Edit
         </Button>
       }
-      onSubmit={(event) => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        onSave({
-          name: String(data.get("church-name") || "").trim(),
-          abbreviatedName: String(data.get("abbreviated-name") || "").trim(),
-          logo,
-          primaryColour: colour,
-        });
-        setOpen(false);
-      }}
     >
       <SectionTitle>General details</SectionTitle>
       <div className="mt-3 grid gap-2">
-        <Label htmlFor="church-name" className="text-sm font-normal text-crozier-text-placeholder">
-          Church Name <span className="text-crozier-text-heading">*</span>
-        </Label>
-        <Input id="church-name" name="church-name" defaultValue={branch.name} required className="h-10.5 border-0 bg-crozier-surface-primary-tint px-3 text-sm font-normal shadow-none" />
+        <Label htmlFor="settings-tenant-name" className="text-sm font-normal text-crozier-text-placeholder">Church Name <span className="text-crozier-text-heading">*</span></Label>
+        <Input id="settings-tenant-name" name="name" defaultValue={tenant.name} required className="h-10.5 border-0 bg-crozier-surface-primary-tint px-3 text-sm font-normal shadow-none" />
       </div>
       <div className="mt-5.5 grid gap-2">
-        <Label htmlFor="abbreviated-name" className="text-sm font-normal text-crozier-text-placeholder">
-          Abbreviated Name <span className="text-crozier-text-heading">*</span>
-        </Label>
-        <Input id="abbreviated-name" name="abbreviated-name" defaultValue={branch.abbreviatedName} required className="h-10.5 border-0 bg-crozier-surface-primary-tint px-3 text-sm font-normal shadow-none" />
+        <Label htmlFor="settings-abbreviated-name" className="text-sm font-normal text-crozier-text-placeholder">Abbreviated Name <span className="text-crozier-text-heading">*</span></Label>
+        <Input id="settings-abbreviated-name" name="abbreviatedName" defaultValue={tenant.abbreviatedName} minLength={1} maxLength={12} required className="h-10.5 border-0 bg-crozier-surface-primary-tint px-3 text-sm font-normal shadow-none" />
+      </div>
+      <div className="mt-5.5 grid gap-2">
+        <Label htmlFor="settings-organization-email" className="text-sm font-normal text-crozier-text-placeholder">Organization email</Label>
+        <Input id="settings-organization-email" name="organizationEmail" type="email" defaultValue={tenant.organizationEmail} className="h-10.5 border-0 bg-crozier-surface-primary-tint px-3 text-sm font-normal shadow-none" />
+      </div>
+      <div className="mt-5.5 grid gap-2">
+        <Label htmlFor="settings-organization-phone" className="text-sm font-normal text-crozier-text-placeholder">Organization phone number</Label>
+        <Input id="settings-organization-phone" name="organizationPhoneNumber" type="tel" defaultValue={tenant.organizationPhoneNumber} className="h-10.5 border-0 bg-crozier-surface-primary-tint px-3 text-sm font-normal shadow-none" />
       </div>
 
       <div className="mt-9">
         <SectionTitle>Brand details</SectionTitle>
-        <p className="mt-2.5 text-sm text-crozier-text-placeholder">Upload logo</p>
-        <div className="mt-3 flex items-center gap-4">
-          <img src={logo} alt="Church logo preview" className="size-14 rounded-full object-cover" />
-          <Button type="button" variant="outline" className="h-7 rounded-xl px-2 text-sm font-normal text-crozier-text-body-light" onClick={() => fileRef.current?.click()}>
-            Update
-          </Button>
-          <input ref={fileRef} type="file" accept="image/*" className="sr-only" aria-label="Upload church logo" onChange={(event) => updateLogo(event.target.files?.[0])} />
+        <div className="mt-3 grid gap-2">
+          <Label htmlFor="settings-logo" className="text-sm font-normal text-crozier-text-placeholder">Logo HTTPS URL</Label>
+          <Input id="settings-logo" name="logo" type="url" value={logo} onChange={(event) => setLogo(event.target.value)} placeholder="https://cdn.example.com/logo.png" className="h-10.5 border-0 bg-crozier-surface-primary-tint px-3 text-sm font-normal shadow-none" />
         </div>
-        <p className="mt-3 text-sm text-crozier-text-placeholder">Primary colour</p>
-        <div className="mt-3 rounded-[18px] bg-crozier-surface-primary-tint p-4">
-          <button
-            type="button"
-            aria-label="Choose primary colour from gradient"
-            className="relative block h-65 w-full overflow-hidden rounded-lg"
-            style={{ background: "linear-gradient(90deg, rgba(255,255,255,.94), rgba(255,255,255,0) 80%), linear-gradient(0deg, rgba(0,0,0,.75), transparent 85%), #20527c" }}
-            onClick={(event) => {
-              const rect = event.currentTarget.getBoundingClientRect();
-              const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-              const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-              setMarker({ x: x * 100, y: y * 100 });
-              const light = [235, 246, 255];
-              const dark = [19, 58, 86];
-              const channels = light.map((start, index) =>
-                Math.round((start * (1 - x) + dark[index] * x) * (1 - y * 0.5)),
-              );
-              setColour(`#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`);
-            }}
-          >
-            <span className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow-sm" style={{ left: `${marker.x}%`, top: `${marker.y}%` }} />
-          </button>
+        {logo.startsWith("https://") && <img src={logo} alt="Church logo preview" className="mt-3 size-14 rounded-full object-cover" />}
+        <div className="mt-5.5 grid gap-2">
+          <span className="text-sm text-crozier-text-placeholder">Primary colour</span>
+          <div className="flex h-10.5 items-center gap-3 rounded-lg bg-crozier-surface-primary-tint px-3 text-sm">
+            <span className="size-6 rounded-sm" style={{ backgroundColor: tenant.theme.primaryColour }} />
+            {tenant.theme.primaryColour}
+          </div>
+          <p className="text-xs text-crozier-text-placeholder">Primary colour is not part of the tenant details endpoint.</p>
         </div>
       </div>
+
+      {errorMessage && <p role="alert" className="mt-4 text-sm text-crozier-text-error">{errorMessage}</p>}
     </SideFormSheet>
   );
 };

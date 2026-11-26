@@ -1,19 +1,19 @@
 import { Button } from "@/components/ui/button";
-import type { DashboardPeriod } from "../types/dashboard.types";
+import type { AnalyticsFilter } from "../types/dashboard.types";
 
 const periodOptions: Array<{
   label: string;
-  value: DashboardPeriod;
+  value: AnalyticsFilter;
 }> = [
-  { label: "1 year", value: "1y" },
-  { label: "6 months", value: "6m" },
-  { label: "3 months", value: "3m" },
-  { label: "30 days", value: "30d" },
+  { label: "1 year", value: "year" },
+  { label: "6 months", value: "6_months" },
+  { label: "3 months", value: "3_months" },
+  { label: "30 days", value: "recent_month" },
 ];
 
 interface PeriodFilterProps {
-  value: DashboardPeriod;
-  onChange: (period: DashboardPeriod) => void;
+  value: AnalyticsFilter;
+  onChange: (period: AnalyticsFilter) => void;
 }
 
 const PeriodFilter = ({ value, onChange }: PeriodFilterProps) => {

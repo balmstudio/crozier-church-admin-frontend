@@ -15,6 +15,7 @@ interface SideFormSheetProps {
   cancelLabel?: string;
   onCancel?: () => void;
   contentClassName?: string;
+  isSubmitting?: boolean;
 }
 
 const SideFormSheet = ({
@@ -28,6 +29,7 @@ const SideFormSheet = ({
   cancelLabel = "Cancel",
   onCancel,
   contentClassName,
+  isSubmitting = false,
 }: SideFormSheetProps) => {
   return (
     <SideSheet title={title} trigger={trigger} open={open} onOpenChange={onOpenChange}>
@@ -47,6 +49,7 @@ const SideFormSheet = ({
           )}
           <Button
             type="submit"
+            disabled={isSubmitting}
             className="h-9 rounded-lg bg-crozier-text-action px-5 text-neutral-white
                 hover:bg-crozier-text-action"
           >

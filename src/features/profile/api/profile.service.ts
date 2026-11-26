@@ -1,16 +1,31 @@
-import { userProfile } from "../data/profile.mock";
-import type { UpdatePasswordDto, UpdateProfileDto } from "../dto/profile.dto";
-import type { UserProfile } from "../types/profile.types";
+import type {
+  ChangeWorkerPasswordRequest,
+  ChangeWorkerPasswordResponse,
+  ProfileCurrentUserResponse,
+  UpdateWorkerProfileRequest,
+  UpdateWorkerProfileResponse,
+} from "../types/profile.types";
+import api from "@/services/api";
+import { PROFILE_ENDPOINTS } from "./profile.api";
 
-let profile = { ...userProfile };
-
-export const getProfile = async (): Promise<UserProfile> => profile;
-
-export const updateProfile = async (updates: UpdateProfileDto): Promise<UserProfile> => {
-  profile = { ...profile, ...updates };
-  return profile;
+export const getProfileCurrentUser = async (): Promise<ProfileCurrentUserResponse> => {
+  const { data } = await api.get<ProfileCurrentUserResponse>(PROFILE_ENDPOINTS.CURRENT_USER);
+  return data;
 };
 
-export const updatePassword = async (passwords: UpdatePasswordDto): Promise<void> => {
-  void passwords;
+export const updateProfile = async (
+  body: UpdateWorkerProfileRequest,
+): Promise<UpdateWorkerProfileResponse> => {
+  const { data } = await api.post<UpdateWorkerProfileResponse>(PROFILE_ENDPOINTS.UPDATE, body);
+  return data;
+};
+
+export const updatePassword = async (
+  body: ChangeWorkerPasswordRequest,
+): Promise<ChangeWorkerPasswordResponse> => {
+  const { data } = await api.put<ChangeWorkerPasswordResponse>(
+    PROFILE_ENDPOINTS.CHANGE_PASSWORD,
+    body,
+  );
+  return data;
 };

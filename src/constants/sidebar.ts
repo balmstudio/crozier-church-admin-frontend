@@ -11,11 +11,11 @@ export const sidebarItems = [
     path: "/units",
     icon: CROZIERICONS.Hierarchy,
   },
-  {
-    label: "Admin users",
-    path: "/admin-users",
-    icon: CROZIERICONS.AdminUsers,
-  },
+  // {
+  //   label: "Admin users",
+  //   path: "/admin-users",
+  //   icon: CROZIERICONS.AdminUsers,
+  // },
   {
     label: "Settings",
     path: "/settings",
